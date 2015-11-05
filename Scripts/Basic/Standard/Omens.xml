@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Omens" script:language="StarBasic">REM  *****  BASIC  *****
+dim OmensSheet as object
+dim OmensForm as object
+
+sub GetOmens
+	if OmensSheet &lt;&gt; NULL then
+		exit sub
+	end if 
+	
+	OmensSheet	= ThisComponent.Sheets.getByName(&quot;Omens&quot;)
+	OmensForm	= OmensSheet.DrawPage.Forms.GetByName(&quot;formOmens&quot;)
+end sub
+
+function TopOmen as integer
+	&apos; Finds the first &quot;non-played&quot; card in the Omen deck
+	dim topofdeck as integer
+	
+	topofdeck = 1
+	do while OmensSheet.getCellByPosition(0, topofDeck + 5).string = &quot;&quot;
+		topofdeck = topofdeck + 1
+	loop
+	
+	TopOmen = topofdeck
+end function
+
+sub PlayTopOmen
+	dim Omen, flavor, effect, post as string
+	dim card as integer
+	
+	GetOmens
+	
+	card = TopOmen
+	
+	Omen = OmensSheet.getCellByPosition(0, card + 5).string
+	OmensSheet.getCellByPosition(1, card + 5).string = Omen
+	OmensSheet.getCellByPosition(0, card + 5).string = &quot;&quot;
+	
+	flavor = OmensSheet.getCellByPosition(3, card + 5).string
+	effect = OmensSheet.getCellByPosition(4, card + 5).string
+	
+	effect = REPLACE(effect, &quot;:&quot;, &quot;:&quot; &amp; CHR(13))
+	effect = REPLACE(effect, &quot;;&quot;, CHR(13))
+	
+	post = &quot;[size=14][b]&quot; &amp; omen &amp; &quot;[/b][/size]&quot; &amp; CHR(13)
+	post = post &amp; &quot;[i]&quot; &amp; flavor &amp; &quot;[/i]&quot; &amp; CHR(13) &amp; CHR(13)
+	post = post &amp; effect
+	
+	CopyToClipboard post
+end sub
+
+sub ShuffleOmensDeck (shuffleAll as boolean)
+	dim tmpval, sortOrder(13) as double
+	dim tmpevent, Omenlst(13) as variant
+	dim Omendata(5) as variant
+	dim Omenid, col, row, top as integer
+	
+	GetOmens
+	if shuffleAll = TRUE then
+		top = 1
+	else
+		top = TopOmen
+	end if
+	
+	OmensForm.getByName(&quot;btnShuffleOmens&quot;).enabled = FALSE
+	
+	for Omenid = top to 13
+		sortOrder(Omenid) = rnd()
+		redim Omendata(5) as variant
+		for col = 0 to 4
+			&apos; 5 is the number of columns, and is ALSO the number of rows we have to skip
+			Omendata(col) = OmensSheet.getCellByPosition(col, Omenid + 5).string
+		next col
+		Omenlst(Omenid) = Omendata()
+	next Omenid
+	
+	for i = top to 13
+		for j = i+1 to 13
+			if sortOrder(i) &gt; sortOrder(j) then
+				tmpval = sortOrder(i)
+				tmpOmen = Omenlst(i)
+				
+				sortOrder(i) = sortOrder(j)
+				Omenlst(i) = Omenlst(j)
+				
+				sortOrder(j) = tmpval
+				Omenlst(j) = tmpOmen
+			end if
+		next j
+	next i
+	
+	for Omenid = top to 13
+		tmpOmen = Omenlst(Omenid)
+		if tmpOmen(0) = &quot;&quot; then
+			tmpOmen(0) = tmpOmen(1)
+		end if
+		OmensSheet.getCellByPosition(0, Omenid + 5).string = tmpOmen(0)
+		OmensSheet.getCellByPosition(1, Omenid + 5).string = &quot;&quot;
+		OmensSheet.getCellByPosition(2, Omenid + 5).string = &quot;&quot;
+		for i = 3 to 4
+			OmensSheet.getCellByPosition(i, Omenid + 5).string = tmpOmen(i)
+		next i
+	next Omenid
+
+	OmensForm.getByName(&quot;btnShuffleOmens&quot;).enabled = TRUE
+
+end sub &apos;ShufleOmensDeck
+
+sub ShuffleOmens
+	ShuffleOmensDeck FALSE
+end sub &apos;ShuffleOmens
+
+</script:module>

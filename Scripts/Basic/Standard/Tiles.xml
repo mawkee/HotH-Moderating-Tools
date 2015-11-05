@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Tiles" script:language="StarBasic">REM  *****  BASIC  *****
+dim TilesSheet as object
+dim TilesForm as object
+
+sub GetTiles
+	if TilesSheet &lt;&gt; NULL then
+		exit sub
+	end if 
+	
+	TilesSheet	= ThisComponent.Sheets.getByName(&quot;Tiles&quot;)
+	TilesForm	= TilesSheet.DrawPage.Forms.GetByName(&quot;formTiles&quot;)
+end sub
+
+function ToggleTileButtons (state as boolean)
+	GetTiles
+	
+	TilesForm.getByName(&quot;btnShuffleTiles&quot;).enabled = state
+	TilesForm.getByName(&quot;btnDiscardTile&quot;).enabled = state
+	TilesForm.getByName(&quot;btnDrawUpper&quot;).enabled = state
+	TilesForm.getByName(&quot;btnDrawGround&quot;).enabled = state
+	TilesForm.getByName(&quot;btnDrawBasement&quot;).enabled = state
+end function
+
+function TopTile as integer
+	&apos; Finds the first &quot;non-played&quot; card in the Tile deck
+	dim topofdeck as integer
+	
+	topofdeck = 1
+	do while TilesSheet.getCellByPosition(0, topofDeck + 5).string = &quot;&quot;
+		topofdeck = topofdeck + 1
+	loop
+	
+	TopTile = topofdeck
+end function
+
+function ColorizeTile (tileid as integer)
+	dim i as integer
+	
+	for i = 4 to 7
+		if TilesSheet.getCellByPosition(i, Tileid + 5).string &lt;&gt; &quot;&quot; then
+			TilesSheet.getCellByPosition(i, Tileid + 5).CellBackColor = &amp;Hc7eecf
+		else
+			TilesSheet.getCellByPosition(i, Tileid + 5).CellBackColor = &amp;Hfec7ce
+		end if
+	next i
+end function
+
+function TopTileFloor (floor as string) as boolean
+	dim top as integer
+	GetTiles
+	
+	top = TopTile
+	if floor = &quot;U&quot; then
+		TopTileFloor = TilesSheet.getCellByPosition(6, top + 5).string = &quot;X&quot;
+	elseif floor = &quot;G&quot; then
+		TopTileFloor = TilesSheet.getCellByPosition(5, top + 5).string = &quot;X&quot;
+	elseif floor = &quot;B&quot; then
+		TopTileFloor = TilesSheet.getCellByPosition(4, top + 5).string = &quot;X&quot;
+	end if
+end function &apos; TileFloor
+
+sub DiscardTopTile
+	dim tile as string
+	dim top, tileid, i as integer
+	dim Tiledata(10), tmptile(10) as variant
+	GetTiles
+	
+	top = TopTile
+	ToggleTileButtons FALSE
+	
+	tiledata(0) = &quot;&quot;
+	tiledata(1) = TilesSheet.getCellByPosition(0, top + 5).string
+	tiledata(2) = &quot;&quot;
+	tiledata(3) = &quot;&quot;
+	for i = 4 to 9
+		tiledata(i) = TilesSheet.getCellByPosition(i, top + 5).string
+	next i
+	
+	&apos; And now move it to the end of the list
+	&apos; first, move every one one location up
+	for tileid = top to 43
+		redim tmptile(10) as variant
+		&apos; Get the one below and paste here
+		for i = 0 to 9
+			 TilesSheet.getCellByPosition(i, tileid + 5).string = TilesSheet.getCellByPosition(i, tileid + 6).string
+		next i
+		ColorizeTile(tileid)
+	next tileid
+	
+	&apos; then paste our old one on the end
+	for i = 0 to 9
+		TilesSheet.getCellByPosition(i, 49).string = tiledata(i)
+	next i
+	ColorizeTile(tileid)
+	RepackIfNeeded
+		
+	ToggleTileButtons TRUE
+end sub &apos;DiscardTopTile
+
+sub RepackIfNeeded
+	dim i as integer
+	dim emptydeck as boolean
+	
+	emptydeck = TRUE
+	
+	&apos; Let&apos;s see if we need to repack
+	for i = 1 to 44
+		if TilesSheet.GetCellByPosition(0, i + 5).string &lt;&gt; &quot;&quot; then
+			emptydeck = FALSE
+			exit for
+		end if
+	next i
+	
+	if emptydeck = TRUE then
+		Repack
+	end if
+end sub
+
+sub DrawUpperFloor
+	dim top, i as integer
+	GetTiles
+	
+	top = TopTile
+	
+	do while TRUE
+		if TopTileFloor(&quot;U&quot;) = TRUE then
+			PlayTopTile(&quot;U&quot;)
+			exit do
+		else
+			DiscardTopTile
+		end if
+	loop
+	
+end sub
+
+sub DrawGroundFloor
+	dim top, i as integer
+	GetTiles
+	
+	top = TopTile
+	
+	do while TRUE
+		if TopTileFloor(&quot;G&quot;) = TRUE then
+			PlayTopTile(&quot;G&quot;)
+			exit do
+		else
+			DiscardTopTile
+		end if
+	loop
+	
+end sub
+
+sub DrawBasementFloor
+	dim top, i as integer
+	GetTiles
+	
+	top = TopTile
+	
+	do while TRUE
+		if TopTileFloor(&quot;B&quot;) = TRUE then
+			PlayTopTile(&quot;B&quot;)
+			exit do
+		else
+			DiscardTopTile
+		end if
+	loop
+	
+end sub
+
+sub PlayTopTile (floor as string)
+	dim Tile as string
+	dim card, i as integer
+	
+	GetTiles
+	
+	card = TopTile
+	
+	Tile = TilesSheet.getCellByPosition(0, card + 5).string
+	TilesSheet.getCellByPosition(0, card + 5).string = &quot;&quot;
+	TilesSheet.getCellByPosition(2, card + 5).string = Tile
+	TilesSheet.getCellByPosition(3, card + 5).string = floor
+	RepackIfNeeded
+	MSGBox &quot;Tile &apos;&quot; &amp; Tile &amp; &quot;&apos; drawn and placed on floor &quot; &amp; floor
+end sub
+
+sub Repack
+	dim tile as string
+	dim tileid as integer
+	GetTiles
+	
+	for tileid = 1 to 44
+		if TilesSheet.GetCellByPosition(0, tileid + 5).string = &quot;&quot; then
+			TilesSheet.GetCellByPosition(0, tileid + 5).string = TilesSheet.GetCellByPosition(1, tileid + 5).string
+			TilesSheet.GetCellByPosition(1, tileid + 5).string = &quot;&quot;
+		end if
+	next tileid
+	ShuffleTilesDeck FALSE
+end sub &apos;Repack
+
+sub ShuffleTilesDeck (shuffleAll as boolean)
+	dim tmpval, sortOrder(44) as double
+	dim tmpevent, Tilelst(44) as variant
+	dim Tiledata(10) as variant
+	dim Tileid, col, row, top as integer
+	
+	GetTiles
+	if shuffleAll = TRUE then
+		top = 1
+	else
+		top = TopTile
+	end if
+	
+	ToggleTileButtons FALSE
+	
+	for Tileid = top to 44
+		sortOrder(Tileid) = rnd()
+		redim Tiledata(10) as variant
+		for col = 0 to 9
+			&apos; 5 is the number of columns, and is ALSO the number of rows we have to skip
+			Tiledata(col) = TilesSheet.getCellByPosition(col, Tileid + 5).string
+		next col
+		Tilelst(Tileid) = Tiledata()
+	next Tileid
+	
+	for i = top to 44
+		for j = i+1 to 44
+			if sortOrder(i) &gt; sortOrder(j) then
+				tmpval = sortOrder(i)
+				tmpTile = Tilelst(i)
+				
+				sortOrder(i) = sortOrder(j)
+				Tilelst(i) = Tilelst(j)
+				
+				sortOrder(j) = tmpval
+				Tilelst(j) = tmpTile
+			end if
+		next j
+	next i
+	
+	for Tileid = top to 44
+		tmpTile = Tilelst(Tileid)
+		if tmpTile(0) = &quot;&quot; then
+			if tmpTile(1) &lt;&gt; &quot;&quot; then
+				tmpTile(0) = tmpTile(1)
+			else
+				tmpTile(0) = tmpTile(2)
+			end if
+		end if
+		TilesSheet.getCellByPosition(0, Tileid + 5).string = tmpTile(0)
+		TilesSheet.getCellByPosition(1, Tileid + 5).string = &quot;&quot;
+		TilesSheet.getCellByPosition(2, Tileid + 5).string = &quot;&quot;
+		TilesSheet.getCellByPosition(3, Tileid + 5).string = &quot;&quot;
+		for i = 4 to 9
+			TilesSheet.getCellByPosition(i, Tileid + 5).string = tmpTile(i)
+		next i
+		ColorizeTile(TileID)
+	next Tileid
+
+	ToggleTileButtons TRUE
+
+end sub &apos;ShufleTilesDeck
+
+sub ShuffleTiles
+	ShuffleTilesDeck FALSE
+end sub &apos;ShuffleTiles
+
+</script:module>

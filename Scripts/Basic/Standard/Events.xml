@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Events" script:language="StarBasic">REM  *****  BASIC  *****
+dim EventsSheet as object
+dim EventsForm as object
+
+sub GetEvents
+	if EventsSheet &lt;&gt; NULL then
+		exit sub
+	end if 
+	
+	EventsSheet	= ThisComponent.Sheets.getByName(&quot;Events&quot;)
+	EventsForm	= EventsSheet.DrawPage.Forms.GetByName(&quot;formEvents&quot;)
+end sub
+
+function TopEvent as integer
+	&apos; Finds the first &quot;non-played&quot; card in the event deck
+	dim topofdeck as integer
+	
+	topofdeck = 1
+	do while EventsSheet.getCellByPosition(0, topofDeck + 5).string = &quot;&quot;
+		topofdeck = topofdeck + 1
+	loop
+	
+	TopEvent = topofdeck
+end function
+
+sub PlayTopEvent
+	dim event, flavor, effect, post as string
+	dim card as integer
+	
+	GetEvents
+	
+	card = TopEvent
+	
+	event = EventsSheet.getCellByPosition(0, card + 5).string
+	EventsSheet.getCellByPosition(1, card + 5).string = event
+	EventsSheet.getCellByPosition(0, card + 5).string = &quot;&quot;
+	
+	flavor = EventsSheet.getCellByPosition(3, card + 5).string
+	effect = EventsSheet.getCellByPosition(4, card + 5).string
+	
+	effect = REPLACE(effect, &quot;:&quot;, &quot;:&quot; &amp; CHR(13))
+	effect = REPLACE(effect, &quot;;&quot;, CHR(13))
+	
+	post = &quot;[size=14][b]&quot; &amp; event &amp; &quot;[/b][/size]&quot; &amp; CHR(13)
+	post = post &amp; &quot;[i]&quot; &amp; flavor &amp; &quot;[/i]&quot; &amp; CHR(13) &amp; CHR(13)
+	post = post &amp; effect
+	
+	CopyToClipboard post
+end sub
+
+sub ShuffleEventsDeck (shuffleAll as boolean)
+	dim tmpval, sortOrder(45) as double
+	dim tmpevent, eventlst(45) as variant
+	dim eventdata(6) as variant
+	dim eventid, col, row, top as integer
+	
+	GetEvents
+	if shuffleAll = TRUE then
+		top = 1
+	else
+		top = TopEvent
+	end if
+	
+	EventsForm.getByName(&quot;btnShuffleEvents&quot;).enabled = FALSE
+	
+	for eventid = top to 45
+		sortOrder(eventid) = rnd()
+		redim eventdata(6) as variant
+		for col = 0 to 5
+			&apos; 5 is the number of columns, and is ALSO the number of rows we have to skip
+			eventdata(col) = EventsSheet.getCellByPosition(col, eventid + 5).string
+		next col
+		eventlst(eventid) = eventdata()
+	next eventid
+	
+	for i = top to 45
+		for j = i+1 to 45
+			if sortOrder(i) &gt; sortOrder(j) then
+				tmpval = sortOrder(i)
+				tmpevent = eventlst(i)
+				
+				sortOrder(i) = sortOrder(j)
+				eventlst(i) = eventlst(j)
+				
+				sortOrder(j) = tmpval
+				eventlst(j) = tmpevent
+			end if
+		next j
+	next i
+	
+	for eventid = top to 45
+		tmpevent = eventlst(eventid)
+		if tmpevent(0) = &quot;&quot; then
+			tmpevent(0) = tmpevent(1)
+		end if
+		EventsSheet.getCellByPosition(0, eventid + 5).string = tmpevent(0)
+		EventsSheet.getCellByPosition(1, eventid + 5).string = &quot;&quot;
+		EventsSheet.getCellByPosition(2, eventid + 5).string = &quot;&quot;
+		for i = 3 to 5
+			EventsSheet.getCellByPosition(i, eventid + 5).string = tmpevent(i)
+		next i
+	next eventid
+
+	EventsForm.getByName(&quot;btnShuffleEvents&quot;).enabled = TRUE
+
+end sub &apos;ShufleEventsDeck
+
+sub ShuffleEvents
+	ShuffleEventsDeck FALSE
+end sub &apos;ShuffleEvents
+
+</script:module>

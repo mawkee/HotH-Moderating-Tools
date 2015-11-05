@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Setup" script:language="StarBasic">REM  *****  BASIC  *****
+dim SetupSheet, SetupForm as object
+
+sub GetSetup
+	if SetupSheet &lt;&gt; NULL then
+		exit sub
+	end if 
+	
+	SetupSheet	= ThisComponent.Sheets.getByName(&quot;Setup&quot;)
+	SetupForm	= SetupSheet.DrawPage.Forms.GetByName(&quot;formSetup&quot;)
+
+end sub
+
+sub Begin_Setup
+	dim rtcnd, i as integer
+	GetSetup
+	
+	rtcnd = MsgBox(&quot;Do you want to begin the Game Setup?&quot;, 4, &quot;Game Setup&quot;)
+	if rtcnd &lt;&gt; 6 then
+		exit sub
+	end if
+	
+	SetupForm.GetByName(&quot;lstPlayerCnt&quot;).enabled = TRUE
+	SetupForm.GetByName(&quot;lstPlayerCnt&quot;).selectedItems() = array(0)
+	TogglePlayerLists
+	for i = 1 to 6
+		SetupForm.GetByName(&quot;player&quot; &amp; i).string = &quot;player&quot; &amp; i
+		SetupForm.GetByName(&quot;char&quot; &amp; i).selectedItems() = array(0)
+	next i
+	SetupForm.GetByName(&quot;btnStart&quot;).enabled = TRUE
+end sub
+
+sub TogglePlayerLists
+	dim lstplayercnt as object
+	dim playercnt, i as integer
+	GetSetup
+	
+	lstplayercnt = SetupForm.GetByName(&quot;lstPlayerCnt&quot;)	
+	playercnt = val(lstplayercnt.StringItemList(lstplayercnt.SelectedItems(0)))
+	
+	&apos; Temporarily disable the list
+	lstplayercnt.enabled = FALSE
+	
+	for i = 1 to 6
+		TogglePlayer(i, i&lt;=playercnt)
+	next i
+	
+	&apos; Reenable the list
+	lstplayercnt.enabled = TRUE
+end sub
+
+function TogglePlayer (playerid as integer, state as boolean)
+	GetSetup
+	
+	&apos; label, player and char
+	SetupForm.GetByName(&quot;lplayer&quot; &amp; playerid).enabled = state
+	SetupForm.GetByName(&quot;player&quot; &amp; playerid).enabled = state
+	SetupForm.GetByName(&quot;char&quot; &amp; playerid).enabled = state
+end function &apos; TogglePlayer
+
+sub StartGame
+	dim lstplayercnt, lstchar as object
+	dim playercnt, i, j as integer
+	dim colorlst(6), charname, icolor as string
+	GetSetup
+	
+	rtcnd = MsgBox(&quot;Do you want to start the game?&quot;, 4, &quot;Game Start&quot;)
+	if rtcnd &lt;&gt; 6 then
+		exit sub
+	end if
+	
+	&apos; Setting the player count on the Characters tab
+	lstplayercnt = SetupForm.GetByName(&quot;lstPlayerCnt&quot;)
+	playercnt = val(lstplayercnt.StringItemList(lstplayercnt.SelectedItems(0)))
+	
+	&apos; Verifying the selected characters
+	for i = 1 to playercnt
+		lstchar = SetupForm.GetByName(&quot;char&quot; &amp; i)
+		charname = lstchar.StringItemList(lstchar.SelectedItems(0))
+		if charname = &quot;&quot; then
+			msgbox &quot;Please select a character for player &quot; &amp; i
+			exit sub
+		end if
+		
+		icolor = GetPlayerColor(charname)
+		colorlst(i) = icolor
+		
+		&apos; Let&apos;s see if we have a duplicate...
+		for j = 1 to i-1
+			if colorlst(j) = icolor then
+				msgbox &quot;Duplicated character color (&quot; &amp; icolor &amp; &quot;) for characters &quot; &amp; charname &amp; &quot; and &quot; &amp; lstchar.StringItemList(j)
+				exit sub
+			end if
+		next j
+	next i
+	
+	SetPlayerCnt playercnt
+	&apos; Now we actually set up the players
+	ClearCharStats
+	
+	for i = 1 to 6
+		if i &lt;= playercnt then
+			lstchar = SetupForm.GetByName(&quot;char&quot; &amp; i)
+			charname = lstchar.StringItemList(lstchar.SelectedItems(0))
+			SetupPlayer(i, charname)
+		else
+			SetupPlayer(i, &quot;&quot;)
+		end if
+	next i
+	
+	UpdateCharStats
+	
+	&apos; I&apos;ve read this is necessary to circumvent this crappy RNG
+	Randomize
+	RND
+	RND
+	RND
+
+	ShuffleEventsDeck TRUE
+	ShuffleItemsDeck TRUE
+	ShuffleOmensDeck TRUE
+	ShuffleTilesDeck TRUE
+	
+	MsgBox &quot;Game is ready to start!&quot;
+end sub &apos; StartGame
+
+</script:module>

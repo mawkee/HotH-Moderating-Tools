@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Items" script:language="StarBasic">REM  *****  BASIC  *****
+dim ItemsSheet as object
+dim ItemsForm as object
+
+sub GetItems
+	if ItemsSheet &lt;&gt; NULL then
+		exit sub
+	end if 
+	
+	ItemsSheet	= ThisComponent.Sheets.getByName(&quot;Items&quot;)
+	ItemsForm	= ItemsSheet.DrawPage.Forms.GetByName(&quot;formItems&quot;)
+end sub
+
+function TopItem as integer
+	&apos; Finds the first &quot;non-played&quot; card in the item deck
+	dim topofdeck as integer
+	
+	topofdeck = 1
+	do while ItemsSheet.getCellByPosition(0, topofDeck + 5).string = &quot;&quot;
+		topofdeck = topofdeck + 1
+	loop
+	
+	TopItem = topofdeck
+end function
+
+sub PlayTopItem
+	dim item, flavor, effect, post as string
+	dim card as integer
+	
+	GetItems
+	
+	card = TopItem
+	
+	item = ItemsSheet.getCellByPosition(0, card + 5).string
+	ItemsSheet.getCellByPosition(1, card + 5).string = item
+	ItemsSheet.getCellByPosition(0, card + 5).string = &quot;&quot;
+	
+	flavor = ItemsSheet.getCellByPosition(3, card + 5).string
+	effect = ItemsSheet.getCellByPosition(4, card + 5).string
+	
+	effect = REPLACE(effect, &quot;:&quot;, &quot;:&quot; &amp; CHR(13))
+	effect = REPLACE(effect, &quot;;&quot;, CHR(13))
+	
+	post = &quot;[size=14][b]&quot; &amp; item &amp; &quot;[/b][/size]&quot; &amp; CHR(13)
+	post = post &amp; &quot;[i]&quot; &amp; flavor &amp; &quot;[/i]&quot; &amp; CHR(13) &amp; CHR(13)
+	post = post &amp; effect
+	
+	CopyToClipboard post
+end sub
+
+sub ShuffleItemsDeck (shuffleAll as boolean)
+	dim tmpval, sortOrder(22) as double
+	dim tmpevent, itemlst(22) as variant
+	dim itemdata(5) as variant
+	dim itemid, col, row, top as integer
+	
+	GetItems
+	if shuffleAll = TRUE then
+		top = 1
+	else
+		top = TopItem
+	end if
+	
+	ItemsForm.getByName(&quot;btnShuffleItems&quot;).enabled = FALSE
+	
+	for itemid = top to 22
+		sortOrder(itemid) = rnd()
+		redim itemdata(5) as variant
+		for col = 0 to 4
+			&apos; 5 is the number of columns, and is ALSO the number of rows we have to skip
+			itemdata(col) = ItemsSheet.getCellByPosition(col, itemid + 5).string
+		next col
+		itemlst(itemid) = itemdata()
+	next itemid
+	
+	for i = top to 22
+		for j = i+1 to 22
+			if sortOrder(i) &gt; sortOrder(j) then
+				tmpval = sortOrder(i)
+				tmpitem = itemlst(i)
+				
+				sortOrder(i) = sortOrder(j)
+				itemlst(i) = itemlst(j)
+				
+				sortOrder(j) = tmpval
+				itemlst(j) = tmpitem
+			end if
+		next j
+	next i
+	
+	for itemid = top to 22
+		tmpitem = itemlst(itemid)
+		if tmpitem(0) = &quot;&quot; then
+			tmpitem(0) = tmpitem(1)
+		end if
+		ItemsSheet.getCellByPosition(0, itemid + 5).string = tmpitem(0)
+		ItemsSheet.getCellByPosition(1, itemid + 5).string = &quot;&quot;
+		ItemsSheet.getCellByPosition(2, itemid + 5).string = &quot;&quot;
+		for i = 3 to 4
+			ItemsSheet.getCellByPosition(i, itemid + 5).string = tmpitem(i)
+		next i
+	next itemid
+
+	ItemsForm.getByName(&quot;btnShuffleItems&quot;).enabled = TRUE
+
+end sub &apos;ShufleItemsDeck
+
+sub ShuffleItems
+	ShuffleItemsDeck FALSE
+end sub &apos;ShuffleItems
+
+</script:module>

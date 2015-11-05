@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Characters" script:language="StarBasic">REM  *****  BASIC  *****
+dim CharactersSheet as object
+dim CharactersForm as object
+
+const _GameTurnRow = 0
+const _GameTurnCol = 3
+
+const _PlayerAttrRow = 3
+const _PlayerAttrCol = 3
+const _PlayerCurAttrCol = 12
+const _PlayerCurAttrValCol = 13
+const _PlayerTemplateCol = 15
+const _PlayerNameCol = 1
+
+const _PlayerCntRow = 1
+const _PlayerCntCol = 3
+
+const _AttrSpeedID = 0
+const _AttrMightID = 1
+const _AttrSanityID = 2
+const _AttrKnowledgeID = 3
+
+global const _white		= &amp;Hffffff
+global const _yellow	= &amp;Hffff00
+global const _orange	= &amp;Hffcc99
+global const _bluegrey	= &amp;He6e6ff
+global const _red		= &amp;Hff0000
+global const _blue		= &amp;h0000ff
+global const _blue8		= &amp;h99ccff
+global const _black		= &amp;h000000
+global const _green		= &amp;h009900
+global const _purple	= &amp;h990099
+global const _grey		= &amp;H909090
+global const _ltgrey	= &amp;He6e6e6
+global const _blue2		= &amp;h0084D1
+global const _green1	= &amp;h355e00
+global const _red2 		= &amp;hcc3300
+global const _blue3		= &amp;h0099cc
+global const _brown		= &amp;h800000
+
+sub GetCS
+	if CharactersSheet &lt;&gt; NULL then
+		exit sub
+	end if 
+	
+	CharactersSheet	= ThisComponent.Sheets.getByName(&quot;Characters&quot;)
+	CharactersForm	= CharactersSheet.DrawPage.Forms.GetByName(&quot;formCharacters&quot;)
+end sub
+
+function PlayerCnt as integer
+	GetCS
+	PlayerCnt = CharactersSheet.GetCellByPosition(_PlayerCntCol,_PlayerCntRow).Value
+end function
+
+function SetPlayerCnt (plyrcnt as integer)
+	GetCS
+	
+	CharactersSheet.GetCellByPosition(_PlayerCntCol,_PlayerCntRow).Value = plyrcnt
+end function
+
+function PlayerRow (playerid as integer) as integer
+	PlayerRow = _PlayerAttrRow + ((playerid-1) * 4)
+end function
+
+function GetCurrentPlayer as integer
+	GetCurrentPlayer = CharactersSheet.GetCellByPosition(_GameTurnCol + 1, GameTurnRow).Value
+end function
+
+function GetPlayerName (playerid as integer) as string
+	GetCS
+	
+	GetPlayerName = CharactersSheet.GetCellByPosition(_PlayerNameCol, PlayerRow(playerid)).String
+end function
+
+function GetFontColor (playername as string) as long
+	dim plist(12) as string
+	dim i, pcolor(12) as integer
+	dim scolor(12) as object
+	
+	plist = ARRAY(&quot;Brandon Jaspers&quot;, &quot;Peter Akimoto&quot;, &quot;Darrin Williams&quot;, &quot;Ox Bellows&quot;, &quot;Father Rhinehardt&quot;, &quot;Professor Longfellow&quot;, _
+			&quot;Heather Granville&quot;, &quot;Jenny LeClerc&quot;, &quot;Vivian Lopez&quot;, &quot;Madame Zostra&quot;, &quot;Missy Dubourde&quot;, &quot;Zoe Ingstrom&quot;)
+	scolor = ARRAY(_green, _green, _red, _red, _grey, _grey, _
+			_purple, _purple, _blue, _blue, _orange, _orange)
+	
+	for i = 0 to 11
+		if plist(i) = playername then
+			exit for
+		end if
+	next i
+	
+	GetFontColor = scolor(i)
+end function &apos; GetPlayerColor
+
+function GetPlayerColor (playername as string) as string
+	dim plist(12) as string
+	dim i, pcolor(12) as integer
+	
+	plist = ARRAY(&quot;Brandon Jaspers&quot;, &quot;Peter Akimoto&quot;, &quot;Darrin Williams&quot;, &quot;Ox Bellows&quot;, &quot;Father Rhinehardt&quot;, &quot;Professor Longfellow&quot;, _
+			&quot;Heather Granville&quot;, &quot;Jenny LeClerc&quot;, &quot;Vivian Lopez&quot;, &quot;Madame Zostra&quot;, &quot;Missy Dubourde&quot;, &quot;Zoe Ingstrom&quot;)
+	pcolor = ARRAY(&quot;green&quot;, &quot;green&quot;, &quot;red&quot;, &quot;red&quot;, &quot;darkgray&quot;, &quot;darkgray&quot;, _
+			&quot;purple&quot;, &quot;purple&quot;, &quot;blue&quot;, &quot;blue&quot;, &quot;orange&quot;, &quot;orange&quot;)
+	
+	for i = 0 to 11
+		if plist(i) = playername then
+			exit for
+		end if
+	next i
+	GetPlayerColor = pcolor(i)
+end function &apos; GetPlayerColor
+
+function GetPlayerStats (playername as string) as object
+	dim stats(4, 9) as integer
+	
+	if playername = &quot;Brandon Jaspers&quot; then
+		GetPlayerStats = ARRAY(ARRAY(3,4,4,4,5,6,7,8,3), ARRAY(2,3,3,4,5,6,6,7,4), ARRAY(3,3,3,4,5,6,7,8,4), ARRAY(1,3,3,5,5,6,6,7,3))
+	elseif playername = &quot;Peter Akimoto&quot; then
+		GetPlayerStats = ARRAY(ARRAY(3,3,3,4,6,6,7,7,4), ARRAY(2,3,3,4,5,5,6,8,3), ARRAY(3,4,4,4,5,6,6,7,4), ARRAY(3,4,4,5,6,7,7,8,3))
+	elseif playername = &quot;Darrin Williams&quot; then
+		GetPlayerStats = ARRAY(ARRAY(4,4,4,5,6,7,7,8,5), ARRAY(2,3,3,4,5,6,6,7,3), ARRAY(1,2,3,4,5,5,5,7,3), ARRAY(2,3,3,4,5,5,5,7,3))
+	elseif playername = &quot;Ox Bellows&quot; then
+		GetPlayerStats = ARRAY(ARRAY(2,2,2,3,4,5,5,6,5), ARRAY(4,5,5,6,6,7,8,8,3), ARRAY(2,2,3,4,5,5,6,7,3), ARRAY(2,2,3,3,5,5,6,6,3))
+	elseif playername = &quot;Father Rhinehardt&quot; then
+		GetPlayerStats = ARRAY(ARRAY(2,3,3,4,5,6,7,7,3), ARRAY(1,2,2,4,4,5,5,7,3), ARRAY(3,4,5,5,6,7,7,8,5), ARRAY(1,3,3,4,5,6,6,8,4))
+	elseif playername = &quot;Professor Longfellow&quot; then
+		GetPlayerStats = ARRAY(ARRAY(2,2,4,4,5,5,6,6,4), ARRAY(1,2,3,4,5,5,6,6,3), ARRAY(1,3,3,4,5,5,6,7,3), ARRAY(4,5,5,5,5,6,7,8,5))
+	elseif playername = &quot;Vivian Lopez&quot; then
+		GetPlayerStats = ARRAY(ARRAY(3,4,4,4,4,6,7,8,4), ARRAY(2,2,2,4,4,5,6,6,3), ARRAY(4,4,4,5,6,7,8,8,3), ARRAY(4,5,5,5,5,6,6,7,4))
+	elseif playername = &quot;Madame Zostra&quot; then
+		GetPlayerStats = ARRAY(ARRAY(2,3,3,5,5,6,6,7,3), ARRAY(2,3,3,4,5,5,5,6,4), ARRAY(4,4,4,5,6,7,8,8,3), ARRAY(1,3,4,4,4,5,6,6,4))
+	elseif playername = &quot;Heather Granville&quot; then
+		GetPlayerStats = ARRAY(ARRAY(3,3,4,5,6,6,7,8,3), ARRAY(3,3,3,4,5,6,7,8,3), ARRAY(3,3,3,4,5,6,6,6,3), ARRAY(2,3,3,4,5,6,7,8,5))
+	elseif playername = &quot;Jenny LeClerc&quot; then
+		GetPlayerStats = ARRAY(ARRAY(2,3,4,4,4,5,6,8,4), ARRAY(3,4,4,4,4,5,6,8,3), ARRAY(1,1,2,4,4,4,5,6,5), ARRAY(2,3,3,4,4,5,6,8,3))
+	elseif playername = &quot;Missy Dubourde&quot; then
+		GetPlayerStats = ARRAY(ARRAY(3,4,5,6,6,6,7,7,3), ARRAY(2,3,3,3,4,5,6,7,4), ARRAY(1,2,3,4,5,5,6,7,3), ARRAY(2,3,4,4,5,6,6,6,4))
+	elseif playername = &quot;Zoe Ingstrom&quot; then
+		GetPlayerStats = ARRAY(ARRAY(4,4,4,4,5,6,8,8,4), ARRAY(2,2,3,3,4,4,6,7,4), ARRAY(3,4,5,5,6,6,7,8,3), ARRAY(1,2,3,4,4,5,5,5,3))
+	else
+		GetPlayerStats = ARRAY(ARRAY(0,0,0,0,0,0,0,0,5), ARRAY(0,0,0,0,0,0,0,0,5), ARRAY(0,0,0,0,0,0,0,0,5), ARRAY(0,0,0,0,0,0,0,0,5))
+	end if
+end function &apos; GetPlayerStats
+
+function ClearCharStats
+	dim playerid, attr, cr, ccol, curval, i as integer
+	GetCS
+	
+	for playerid = 1 to 6
+		for attr = _AttrSpeedID to _AttrKnowledgeID
+			cr = PlayerRow(playerid) + attr
+			&apos; Background color
+			for i = 1 to 13
+				if playerid &lt;= PlayerCnt then
+					CharactersSheet.GetCellByPosition(_PlayerNameCol + i - 1, cr).CellBackColor = _white
+					CharactersForm.GetByName(&quot;P&quot; &amp; playerid &amp; &quot;SpeedSpin&quot;).enabled = TRUE
+					CharactersForm.GetByName(&quot;P&quot; &amp; playerid &amp; &quot;MightSpin&quot;).enabled = TRUE
+					CharactersForm.GetByName(&quot;P&quot; &amp; playerid &amp; &quot;SanitySpin&quot;).enabled = TRUE
+					CharactersForm.GetByName(&quot;P&quot; &amp; playerid &amp; &quot;KnowledgeSpin&quot;).enabled = TRUE
+					CharactersSheet.GetCellByPosition(_PlayerTemplateCol, cr).string = &quot;&quot;
+				else
+					CharactersSheet.GetCellByPosition(_PlayerNameCol + i - 1, cr).CellBackColor = _grey
+					CharactersForm.GetByName(&quot;P&quot; &amp; playerid &amp; &quot;SpeedSpin&quot;).enabled = FALSE
+					CharactersForm.GetByName(&quot;P&quot; &amp; playerid &amp; &quot;MightSpin&quot;).enabled = FALSE
+					CharactersForm.GetByName(&quot;P&quot; &amp; playerid &amp; &quot;SanitySpin&quot;).enabled = FALSE
+					CharactersForm.GetByName(&quot;P&quot; &amp; playerid &amp; &quot;KnowledgeSpin&quot;).enabled = FALSE
+					CharactersSheet.GetCellByPosition(_PlayerTemplateCol, cr).string = &quot;&quot;
+				end if
+			next i
+		next attr
+	next playerid
+end function &apos; ClearCharStats
+
+Sub UpdateCharStats
+	dim playerid, attr, cr, ccol, curval as integer
+	dim colors() as integer
+	GetCS
+	
+	colors = ARRAY(_red, _green, _blue, _orange)
+	
+	for playerid = 1 to PlayerCnt
+		for attr = _AttrSpeedID to _AttrKnowledgeID
+			cr = PlayerRow(playerid) + attr
+			ccol = CharactersSheet.GetCellByPosition(_PlayerCurAttrCol, cr).Value + PlayerAttrCol
+			curval = CharactersSheet.GetCellByPosition(_PlayerAttrCol + ccol, cr).Value
+			CharactersSheet.GetCellByPosition(_PlayerCurAttrValCol, cr).Value = curval
+			CharactersSheet.GetCellByPosition(_PlayerAttrCol + ccol, cr).CellBackColor = colors(attr)
+			&apos; Set one before and one after as the default white
+			CharactersSheet.GetCellByPosition(_PlayerAttrCol + ccol + 1, cr).CellBackColor = _white
+			CharactersSheet.GetCellByPosition(_PlayerAttrCol + ccol - 1, cr).CellBackColor = _white
+		next attr
+	next playerid
+End Sub &apos; UpdateCharStats
+
+
+Sub AdvanceTurn
+	dim minor, major, rtncd as integer
+	GetCS
+	
+	rtncd = MsgBox(&quot;Advance the turn?&quot;, 4)
+	if rtncd &lt;&gt; 6 then
+		exit sub
+	end if
+
+	major = CharactersSheet.GetCellByPosition(_GameTurnCol, GameTurnRow).Value
+	minor = CharactersSheet.GetCellByPosition(_GameTurnCol + 1, GameTurnRow).Value
+	
+	&apos; Clear up current player
+	for i = 0 to 3
+		CharactersSheet.GetCellByPosition(_PlayerNameCol, PlayerRow(GetCurrentPlayer)+i).CellBackColor = _white
+	next i
+
+	if minor = PlayerCnt then
+		&apos; We advance the major, and the minor is set to 1
+ 		CharactersSheet.GetCellByPosition(_GameTurnCol, GameTurnRow).Value = major + 1
+		CharactersSheet.GetCellByPosition(_GameTurnCol + 1, GameTurnRow).Value = 1
+ 	else
+ 		&apos; Otherwise, just advance the minor
+		CharactersSheet.GetCellByPosition(_GameTurnCol + 1, GameTurnRow).Value = minor + 1
+	end if
+	
+	&apos; Mark new current player
+	for i = 0 to 3
+		CharactersSheet.GetCellByPosition(_PlayerNameCol, PlayerRow(GetCurrentPlayer)+i).CellBackColor = _ltgrey
+	next i
+end sub &apos; Advanceturn
+
+sub GenerateTemplate
+	dim playerid, attr as integer
+	dim ctxt, ptxt, pname, pcolor, pheader, pattr, attrheader() as string
+	GetCS
+	
+	attrheader = ARRAY(&quot;r{Speed}r     - &quot;, &quot;r{Might}r     - &quot;, &quot;b{Sanity}b    - &quot;, &quot;b{Knowledge}b - &quot;)
+	
+	ptxt = &quot;[ImageID=2584193 medium]&quot; &amp; CHR(13) &amp; CHR(13) &amp; &quot;[b]Game Turn: &quot; &amp; _
+			CharactersSheet.GetCellByPosition(_GameTurnCol, _GameTurnRow).string &amp; &quot;.&quot; &amp; _
+			CharactersSheet.GetCellByPosition(_GameTurnCol+1, _GameTurnRow).string &amp; &quot;[/b]&quot; &amp; CHR(13)
+	CharactersSheet.GetCellByPosition(15, 1).string = ptxt
+	ctxt = ptxt
+	
+	ptxt = &quot;[floatleft]&quot; &amp; chr(13)
+	
+	for playerid = 1 to PlayerCnt
+		pname = GetPlayerName(playerid)
+		pcolor = GetPlayerColor(pname)
+		if playerid = GetCurrentPlayer then
+			pheader = &quot;[floatleft][center][b][color=&quot; &amp; pcolor &amp; &quot;]&quot; &amp; pname &amp; &quot;[/b][/color][/center]&quot;
+		else
+			pheader = &quot;[floatleft][center][color=&quot; &amp; pcolor &amp; &quot;]&quot; &amp; pname &amp; &quot;[/color][/center]&quot;
+		end if
+		ptxt = ptxt &amp; pheader &amp; &quot;[c]&quot;
+		for attr = _AttrSpeedID to _AttrKnowledgeID
+			pattr = attrheader(attr)
+			for i = 0 to 8
+				if CharactersSheet.GetCellByPosition(_PlayerCurAttrCol, PlayerRow(playerid) + attr).value = i then
+					pattr = pattr &amp; &quot; [b]r{&quot; &amp; CharactersSheet.GetCellByPosition(_PlayerAttrCol + i, PlayerRow(playerid) + attr).string &amp; &quot;}r[/b]&quot;
+				else
+					pattr = pattr &amp; &quot; &quot; &amp; CharactersSheet.GetCellByPosition(_PlayerAttrCol + i, PlayerRow(playerid) + attr).string
+				end if
+			next i
+			ptxt = ptxt &amp; chr(13) &amp; pattr
+		next attr
+		ptxt = ptxt &amp; &quot;[/c][/floatleft]&quot; &amp; CHR(13)
+		if cint(PlayerCnt / 2) = playerid then
+			ptxt = ptxt &amp; chr(13) &amp; &quot;[/floatleft]&quot; &amp; CHR(13) &amp; &quot;[floatleft]&quot;
+		end if
+		if playercnt = playerid then
+			ptxt = ptxt &amp; chr(13) &amp; &quot;[/floatleft][clear]&quot; &amp; chr(13)
+		end if
+		CharactersSheet.GetCellByPosition(_PlayerTemplateCol, PlayerRow(playerid)).string = ptxt
+		ctxt = ctxt &amp; ptxt
+		ptxt = &quot;&quot;
+	next playerid
+	CopyToClipboard(ctxt)
+end sub &apos; GenerateTemplate
+
+sub SetupPlayer (idx as integer, charname as string)
+	dim stats as object
+	dim plyrrow, attr, i as integer
+	GetCS
+	
+	plyrrow = PlayerRow(idx)
+	CharactersSheet.GetCellByPosition(_PlayerNameCol, plyrrow).string = charname
+	if charname &lt;&gt; &quot;&quot; then
+		CharactersSheet.GetCellByPosition(_PlayerNameCol, plyrrow).CharColor = GetFontColor(charname)
+	end if
+	
+	stats = GetPlayerStats(charname)
+	for attr = _AttrSpeedID to _AttrKnowledgeID
+		cr = plyrrow + attr
+		for i = 0 to 8
+			if playerid &lt;= PlayerCnt then
+				CharactersSheet.GetCellByPosition(_PlayerAttrCol + i + 1, cr).value = stats(attr)(i)
+			end if
+		next i
+	next attr
+end sub &apos; SetupPlayer
+
+
+</script:module>

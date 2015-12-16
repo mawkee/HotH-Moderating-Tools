@@ -11,7 +11,8 @@ const _PlayerAttrRow = 3
 const _PlayerAttrCol = 3
 const _PlayerCurAttrCol = 12
 const _PlayerCurAttrValCol = 13
-const _PlayerTemplateCol = 15
+const _PlayerTraitorCol = 14
+const _PlayerTemplateCol = 16
 const _PlayerNameCol = 1
 
 const _PlayerCntRow = 1
@@ -21,6 +22,9 @@ const _AttrSpeedID = 0
 const _AttrMightID = 1
 const _AttrSanityID = 2
 const _AttrKnowledgeID = 3
+
+const _ExtraTextCol = 16
+const _ExtraTextRow = 27
 
 global const _white		= &amp;Hffffff
 global const _yellow	= &amp;Hffff00
@@ -72,6 +76,31 @@ function GetPlayerName (playerid as integer) as string
 	GetCS
 	
 	GetPlayerName = CharactersSheet.GetCellByPosition(_PlayerNameCol, PlayerRow(playerid)).String
+end function
+
+function PlayerIsDead (playerid as integer) as boolean
+	GetCS
+	
+	PlayerIsDead = CharactersSheet.GetCellByPosition(_PlayerTraitorCol, PlayerRow(playerid)).String = &quot;Dead&quot;
+end function
+
+function PlayerIsTraitor (playerid as integer) as boolean
+	GetCS
+	
+	PlayerIsTraitor = CharactersSheet.GetCellByPosition(_PlayerTraitorCol, PlayerRow(playerid)).String = &quot;Traitor&quot;
+end function
+
+function HauntRevealed as boolean
+	dim i as integer
+	
+	HauntRevealed = FALSE
+	for i = 1 to 6
+		if PlayerIsTraitor(i) then
+			HauntRevealed = TRUE
+			exit function
+		end if
+	next i
+	
 end function
 
 function GetFontColor (playername as string) as long
@@ -227,15 +256,17 @@ end sub &apos; Advanceturn
 
 sub GenerateTemplate
 	dim playerid, attr as integer
-	dim ctxt, ptxt, pname, pcolor, pheader, pattr, attrheader() as string
+	dim ctxt, ptxt, pname, pcolor, pheader, pattr, attrheader(), tmpstr, possessions, ptraitor as string
 	GetCS
 	
 	attrheader = ARRAY(&quot;r{Speed}r     - &quot;, &quot;r{Might}r     - &quot;, &quot;b{Sanity}b    - &quot;, &quot;b{Knowledge}b - &quot;)
 	
-	ptxt = &quot;[ImageID=2584193 medium]&quot; &amp; CHR(13) &amp; CHR(13) &amp; &quot;[b]Game Turn: &quot; &amp; _
+	ptxt = &quot;[ImageID=2584193 medium]&quot; &amp; CHR(13) &amp; CHR(13) &amp; &quot;[size=14][b]Game Turn: &quot; &amp; _
 			CharactersSheet.GetCellByPosition(_GameTurnCol, _GameTurnRow).string &amp; &quot;.&quot; &amp; _
-			CharactersSheet.GetCellByPosition(_GameTurnCol+1, _GameTurnRow).string &amp; &quot;[/b]&quot; &amp; CHR(13)
-	CharactersSheet.GetCellByPosition(15, 1).string = ptxt
+			CharactersSheet.GetCellByPosition(_GameTurnCol+1, _GameTurnRow).string &amp; &quot; -- &quot; &amp; _
+			&quot;[color=&quot; &amp; GetPlayerColor(GetPlayerName(GetCurrentPlayer)) &amp; &quot;]&quot; &amp; GetPlayerName(GetCurrentPlayer)&amp; _
+			&quot;[/color] is the current player.[/b][/size]&quot; &amp; CHR(13)
+	&apos;CharactersSheet.GetCellByPosition(15, 1).string = ptxt
 	ctxt = ptxt
 	
 	ptxt = &quot;[floatleft]&quot; &amp; chr(13)
@@ -243,10 +274,18 @@ sub GenerateTemplate
 	for playerid = 1 to PlayerCnt
 		pname = GetPlayerName(playerid)
 		pcolor = GetPlayerColor(pname)
-		if playerid = GetCurrentPlayer then
-			pheader = &quot;[floatleft][center][b][color=&quot; &amp; pcolor &amp; &quot;]&quot; &amp; pname &amp; &quot;[/b][/color][/center]&quot;
+		if PlayerIsDead(playerid) then
+			ptraitor = &quot;[color=red] [i]DEAD[/i][/color]&quot;
+		elseif PlayerIsTraitor(playerid) then
+			ptraitor = &quot;[color=brown] [i]TRAITOR[/i][/color]&quot;
 		else
-			pheader = &quot;[floatleft][center][color=&quot; &amp; pcolor &amp; &quot;]&quot; &amp; pname &amp; &quot;[/color][/center]&quot;
+			ptraitor = &quot;&quot;
+		end if
+		
+		if playerid = GetCurrentPlayer then
+			pheader = &quot;[floatleft][center][b][color=&quot; &amp; pcolor &amp; &quot;]&quot; &amp; pname &amp; &quot;[/b][/color]&quot; &amp; ptraitor &amp; &quot;[/center]&quot;
+		else
+			pheader = &quot;[floatleft][center][color=&quot; &amp; pcolor &amp; &quot;]&quot; &amp; pname &amp; &quot;[/color]&quot; &amp; ptraitor &amp; &quot;[/center]&quot;
 		end if
 		ptxt = ptxt &amp; pheader &amp; &quot;[c]&quot;
 		for attr = _AttrSpeedID to _AttrKnowledgeID
@@ -260,17 +299,54 @@ sub GenerateTemplate
 			next i
 			ptxt = ptxt &amp; chr(13) &amp; pattr
 		next attr
+		ptxt = ptxt &amp; CHR(13)
+		
+		&apos; Also posting Items, Omens and attached Events
+		posessions = &quot;&quot;
+		tmpstr = OmensByPlayer(pname)
+		if tmpstr &lt;&gt; &quot;&quot; then
+			posessions = posessions &amp; tmpstr
+		end if
+		tmpstr = ItemsByPlayer(pname)
+		if tmpstr &lt;&gt; &quot;&quot; then
+			posessions = posessions &amp; tmpstr
+		end if
+		tmpstr = EventsByPlayer(pname)
+		if tmpstr &lt;&gt; &quot;&quot; then
+			posessions = posessions &amp; tmpstr
+		end if
+		tmpstr = SpecialByPlayer(pname)
+		if tmpstr &lt;&gt; &quot;&quot; then
+			posessions = posessions &amp; tmpstr
+		end if
+		
+		if posessions &lt;&gt; &quot;&quot; then
+			ptxt = ptxt &amp; &quot;[b]Posessions:[/b]&quot; &amp; CHR(13) &amp; posessions
+		end if
+		
+		&apos; Breaking the line
 		ptxt = ptxt &amp; &quot;[/c][/floatleft]&quot; &amp; CHR(13)
+		
+		&apos; Check if we&apos;re halfway, or on the last one
 		if cint(PlayerCnt / 2) = playerid then
 			ptxt = ptxt &amp; chr(13) &amp; &quot;[/floatleft]&quot; &amp; CHR(13) &amp; &quot;[floatleft]&quot;
 		end if
 		if playercnt = playerid then
 			ptxt = ptxt &amp; chr(13) &amp; &quot;[/floatleft][clear]&quot; &amp; chr(13)
 		end if
-		CharactersSheet.GetCellByPosition(_PlayerTemplateCol, PlayerRow(playerid)).string = ptxt
+		
+		&apos; CharactersSheet.GetCellByPosition(_PlayerTemplateCol, PlayerRow(playerid)).string = ptxt
 		ctxt = ctxt &amp; ptxt
 		ptxt = &quot;&quot;
 	next playerid
+	
+	&apos; Extra text (Omen Track, etc)
+	ptxt = &quot;Current [color=darkgreen]Haunt Track[/color] (Omen Count): [b]&quot; &amp; GetHauntTrack &amp; &quot;[/b]&quot;
+	&apos; CharactersSheet.GetCellByPosition(_ExtraTextCol, _ExtraTextRow).string = ptxt
+	ctxt = ctxt &amp; CHR(13) &amp; ptxt &amp; CHR(13)
+	
+	CharactersSheet.GetCellByPosition(16, 1).string = ctxt
+	
 	CopyToClipboard(ctxt)
 end sub &apos; GenerateTemplate
 

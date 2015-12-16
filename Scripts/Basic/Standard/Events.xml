@@ -50,6 +50,21 @@ sub PlayTopEvent
 	CopyToClipboard post
 end sub
 
+function EventsByPlayer (playername as string) as string
+	dim Eventstxt, tmpstr as string
+	dim itemid as integer
+	GetEvents
+	
+	Eventstxt = &quot;&quot;
+	
+	for itemid = 1 to 13
+		if EventsSheet.getCellByPosition(2, itemid + 5).string = playername then
+			Eventstxt = Eventstxt &amp; &quot;     [color=darkblue]&quot; &amp; EventsSheet.getCellByPosition(1, itemid + 5).string &amp; &quot;[/color]&quot; &amp; CHR(13)
+		end if
+	next itemid
+	EventsByPlayer = Eventstxt
+end function &apos;EventsByPlayer
+
 sub ShuffleEventsDeck (shuffleAll as boolean)
 	dim tmpval, sortOrder(45) as double
 	dim tmpevent, eventlst(45) as variant

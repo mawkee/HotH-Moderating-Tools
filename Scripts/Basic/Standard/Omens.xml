@@ -4,6 +4,15 @@
 dim OmensSheet as object
 dim OmensForm as object
 
+const _HauntTrackRow = 2
+const _HauntTrackCol = 3
+
+function GetHauntTrack as string
+	GetOmens
+	
+	GetHauntTrack = OmensSheet.getCellByPosition(_HauntTrackCol, _HauntTrackRow).string
+end function
+
 sub GetOmens
 	if OmensSheet &lt;&gt; NULL then
 		exit sub
@@ -49,6 +58,21 @@ sub PlayTopOmen
 	
 	CopyToClipboard post
 end sub
+
+function OmensByPlayer (playername as string) as string
+	dim omenstxt, tmpstr as string
+	dim omenid as integer
+	GetOmens
+	
+	omenstxt = &quot;&quot;
+	
+	for omenid = 1 to 13
+		if OmensSheet.getCellByPosition(2, omenid + 5).string = playername then
+			omenstxt = omenstxt &amp; &quot;     [color=darkgreen]&quot; &amp; OmensSheet.getCellByPosition(1, omenid + 5).string &amp; &quot;[/color]&quot; &amp; CHR(13)
+		end if
+	next omenid
+	OmensByPlayer = omenstxt
+end function &apos;OmensByPlayer
 
 sub ShuffleOmensDeck (shuffleAll as boolean)
 	dim tmpval, sortOrder(13) as double

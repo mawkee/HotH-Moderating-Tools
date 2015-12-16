@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Special" script:language="StarBasic">REM  *****  BASIC  *****
+dim SpecialSheet as object
+dim SpecialForm as object
+
+sub GetSpecial
+	if SpecialSheet &lt;&gt; NULL then
+		exit sub
+	end if 
+	
+	SpecialSheet	= ThisComponent.Sheets.getByName(&quot;Special&quot;)
+	&apos;SpecialForm		= SpecialSheet.DrawPage.Forms.GetByName(&quot;formSpecial&quot;)
+end sub
+
+function SpecialByPlayer (playername as string) as string
+	dim Specialtxt, tmpstr as string
+	dim itemid as integer
+	GetSpecial
+	
+	Specialtxt = &quot;&quot;
+	
+	for itemid = 1 to 18
+		if SpecialSheet.getCellByPosition(1, itemid + 5).string = playername then
+			Specialtxt = Specialtxt &amp; &quot;     [color=tan]&quot; &amp; SpecialSheet.getCellByPosition(2, itemid + 5).string &amp; &quot;[/color]&quot; &amp; CHR(13)
+		end if
+	next itemid
+	SpecialByPlayer = Specialtxt
+end function &apos;SpecialByPlayer
+
+
+</script:module>

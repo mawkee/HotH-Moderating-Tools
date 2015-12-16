@@ -8,4 +8,5 @@
  <library:element library:name="Items"/>
  <library:element library:name="Omens"/>
  <library:element library:name="Tiles"/>
+ <library:element library:name="Special"/>
 </library:library>
